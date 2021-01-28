@@ -7,21 +7,35 @@
 init()
 {
 	SetDvar("jump_slowdownEnable", 0);
-	SetDvar("g_speed",320);
-	SetDvar("friction",6.0);
+	SetDvar("g_speed", 320);
+	SetDvar("friction", 6.0);
 	SetDvar("perk_weapSpreadMultiplier", -100);
-	SetDvar("perk_healthRegenMultiplier", -100);
+	//SetDvar("perk_healthRegenMultiplier", -100);
+	level.healthRegenDisabled = 1; //denies health regen
 	SetDvar("perk_weapAdsMultiplier", 1000);
 
 	//Map Edits and Weapon and Item Pickups + Respawning
 	self thread maps\mp\_ambientpackage::init();
 
 	level.clientid = 0;
+	level thread onplayerconnecting();
 	level thread onplayerconnect();
+	level thread destroyhudongameend();
 }
 
 onplayerconnect()
 {
+	level endon( "game_ended" );
+	for ( ;; )
+	{
+		level waittill( "connected", player );
+		player thread hudStuff();
+	}
+}
+
+onplayerconnecting()
+{
+	level endon( "game_ended" );
 	for ( ;; )
 	{
 		level waittill("connecting", player );
@@ -41,7 +55,6 @@ onplayerspawned()
 	{
 		self waittill("spawned_player");
 		self thread movementTech();
-		self thread hudStuff();
 		self thread loadoutAdjustments();
 		
 		if(isFirstSpawn)
@@ -125,20 +138,20 @@ comboJumps()
 
 }
 
-hudStuff()
+hudStuff() //doesn't work right now?
 {
 	level endon( "game_ended" );
 	self endon( "disconnect" );
-    //self endon( "death" );
+	//globals so we can destroy the hud on game_ended
+	level.velocityText = self createText("default",1.75,"CENTER","BOTTOM",0,-10,1,"UPS: ");
+	level.healthText = self createText("default",1.75,"CENTER","RIGHT",0,-10,1,"Health: ");
 
-	velocityText = self createText("default",1.75,"CENTER","BOTTOM",0,-10,1,curVel);
-	healthText = self createText("default",1.75,"CENTER","RIGHT",0,-10,1,self.health);
 	velColor = "^1";
 
 	for(;;)
 	{
 		curTeam = self GetTeam();
-		curHP = self.health;
+		//curHP = self.health;
 
 		//UPS Hud
 		curVel = self GetVelocity();
@@ -157,16 +170,15 @@ hudStuff()
 			velColor = "^2";
 		}
 
-		velocityText setText("UPS: " + velColor + fSpeed);
+		level.velocityText setSafeText(self, velColor + fSpeed);
 
-		healthText setText(self.health);
+		level.healthText setValue( self.health );
 
 
 
 		wait 0.01;
-		clearStrings();
+		//clearStrings();
 	}
-
 } 
 
 loadoutAdjustments()
@@ -190,6 +202,20 @@ loadoutAdjustments()
 	self SetPerk("specialty_fastladderclimb");
 	self SetPerk("specialty_fastweaponswitch");
 	self SetPerk("specialty_fastads");
+}
+
+destroyhudongameend()
+{
+	level waittill( "game_ended" );
+	wait 0.5;
+	if ( isDefined( level.velocityText ) )
+	{
+		level.velocityText destroy();
+	}
+	if ( isDefined( level.healthText ) )
+	{
+		level.healthText destroy();
+	}
 }
 
 //Overflow Fix - not by me, credits to unknown
