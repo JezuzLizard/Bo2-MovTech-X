@@ -3,11 +3,8 @@ init()
 {
 	Precache();
     mapEdits();
-	self thread itemRotation();
-	level.angles = 0;
-
-	level.weapons.available = 1;
-	level.items.available = 1;
+	level thread itemRotation();
+	level.weapon_angles = 0;
 }
 
 Precache()
@@ -17,10 +14,13 @@ Precache()
 
 mapEdits()
 {
+	//if were going to extend the number of maps supported we might want to look into using feds gsc utils since it has an openfile function
+	//we could use it to easily store and process data in a text file at the downside of the mod only working on servers
+	//just something to consider
 	if(getDvar("mapname") == "mp_drone")
 	{
 		boxes = [];
-
+		/*
 		//SDC Spawn Door
 		boxes[0] = spawn("script_model", (-1863.98, -986, 115));
     	boxes[0].angles = (0, 90, 0);
@@ -303,261 +303,193 @@ mapEdits()
 		boxes[90] = spawn("script_model", (-265, -67, 220));
     	boxes[90].angles = (0, 90, 0);
 
-		//Weapons and Items
-
-		//-----WEP-----
-		
-		//Underpass SDC right
-		self thread SpawnWeapon("ballista_mp","Railgun",(-49,-998,-5));
-
-		//SDC Stairs
-		self thread SpawnWeapon("ballista_mp","Railgun",(-990,-1036,300));
-
-		//Snipernest SEALS Left
-		self thread SpawnWeapon("ballista_mp","Railgun",(677,925,286));
-
-		//SEALS Spawn
-		self thread SpawnWeapon("ballista_mp","Railgun",(851,3000,373));
-
-		//SDC Spawn
-		self thread SpawnWeapon("ksg_mp","Shotgun",(-1301,-2324,100));
-
-		//Far SEALS left mid between boilers?
-		self thread SpawnWeapon("ksg_mp","Shotgun",(1179,1182,75));
-
-		//Balcony Mid
-		self thread SpawnWeapon("usrpg_mp","Rocket Launcher",(-285,192,272));
-
-		//SEALS Left Mid
-		self thread SpawnWeapon("usrpg_mp","Rocket Launcher",(670,110,50));
-
-
-		//-----ITEMS-----
-
-		//RPG ammo Balcony
-		self thread SpawnItem("t6_wpn_projectile_rpg7","Rocket Launcher Ammo",(-285,250,272),"ammo","rl");
-		self thread SpawnItem("t6_wpn_projectile_rpg7","Rocket Launcher Ammo",(-285,130,272),"ammo","rl");
-
-		//RPG ammo Helipad
-		self thread SpawnItem("t6_wpn_projectile_rpg7","Rocket Launcher Ammo",(109,-940,263),"ammo","rl");
-		self thread SpawnItem("t6_wpn_projectile_rpg7","Rocket Launcher Ammo",(109,-1000,263),"ammo","rl");
-
-		//Shotgun ammo SDC Spawn
-		self thread SpawnItem("p_glo_scavenger_pack","Shotgun Ammo",(-1284,-2243,100),"ammo","shotgun");
-
-		//Shotgun Mid Car
-		self thread SpawnItem("p_glo_scavenger_pack","Shotgun Ammo",(139,251,135),"ammo","shotgun");
-
-		//Far left mid between boilers?
-		self thread SpawnItem("p_glo_scavenger_pack","Shotgun Ammo",(1180,1261,70),"ammo","shotgun");
-		self thread SpawnItem("p_glo_scavenger_pack","Shotgun Ammo",(1180,1094,70),"ammo","shotgun");
-
-		//Snipernest Left
-		self thread SpawnItem("t5_veh_rcbomb_gib_battery","Railgun Ammo",(756,925,280),"ammo","rg");
-
-		//Heli Pad vents
-		self thread SpawnItem("t5_veh_rcbomb_gib_battery","Railgun Ammo",(-90,-568,196),"ammo","rg");
-
-		//SDC Stairs
-		self thread SpawnItem("t5_veh_rcbomb_gib_battery","Railgun Ammo",(-990,-843,285),"ammo","rg");
-
-		//SEALS factory side
-		self thread SpawnItem("t5_veh_rcbomb_gib_battery","Railgun Ammo",(-900,830,290),"ammo","rg");
-
-		//Underpass
-		self thread SpawnItem("t5_veh_rcbomb_gib_battery","Railgun Ammo",(-68,-1103,-10),"ammo","rg");
-		self thread SpawnItem("t5_veh_rcbomb_gib_battery","Railgun Ammo",(46,-905,-12),"ammo","rg");
-
-		//SEALS Catwalk
-		self thread SpawnItem("t6_attach_mag_type05_lmg_world","Machinegun Ammo",(-60,913,278),"ammo","mg");
-
-		//SDC Stairway to Mid
-		self thread SpawnItem("t6_attach_mag_type05_lmg_world","Machinegun Ammo",(253,-210,50),"ammo","mg");
-
-		//SEALS Stairway to Mid
-		self thread SpawnItem("t6_attach_mag_type05_lmg_world","Machinegun Ammo",(298,798,149),"ammo","mg");
-
-		//SDC Beside Vent
-		self thread SpawnItem("t6_attach_mag_type05_lmg_world","Machinegun Ammo",(-375,-575,78),"ammo","mg");
-
-		//Under Balcony Mid
-		self thread SpawnItem("p_glo_scavenger_pack_obj","Health Pack",(-315,251,64),"other","healthSmall");
-
-		//SDC Spawn
-		self thread SpawnItem("p_glo_scavenger_pack_obj","Health Pack",(-381,-864,36),"other","healthSmall");
-
-		//SEALS Spawn
-		self thread SpawnItem("p_glo_scavenger_pack_obj","Health Pack",(78,1948,176),"other","healthSmall");
-
-		//SDC Right Mid
-		self thread SpawnItem("p_glo_scavenger_pack_obj","Health Pack",(901,-133,56),"other","healthSmall");
-
 		for(i = 0; i < boxes.size; i++)
 		{
 			boxes[i] setModel("t6_wpn_supply_drop_ally");
 		}
+		*/
+		spawn_item_wrapper( "consumable", "health_pack", (901,-133,56), "p_glo_scavenger_pack_obj" ); //SDC Right Mid
+		spawn_item_wrapper( "consumable", "health_pack", (78,1948,176), "p_glo_scavenger_pack_obj" ); //SEALS Spawn
+		spawn_item_wrapper( "consumable", "health_pack", (-381,-864,36), "p_glo_scavenger_pack_obj" ); //SDC Spawn
+		spawn_item_wrapper( "consumable", "health_pack", (-315,251,64), "p_glo_scavenger_pack_obj" ); //Under Balcony Mid
+		spawn_item_wrapper( "ammo", "machinegun_ammo", (-375,-575,78), "t6_attach_mag_type05_lmg_world" ); //SDC Beside Vent
+		spawn_item_wrapper( "ammo", "machinegun_ammo", (298,798,149), "t6_attach_mag_type05_lmg_world" ); //SEALS Stairway to Mid
+		spawn_item_wrapper( "ammo", "machinegun_ammo", (253,-210,50), "t6_attach_mag_type05_lmg_world" ); //SDC Stairway to Mid
+		spawn_item_wrapper( "ammo", "machinegun_ammo", (-60,913,278), "t6_attach_mag_type05_lmg_world" ); //SEALS Catwalk
+		spawn_item_wrapper( "ammo", "railgun_ammo", (46,-905,-12), "t5_veh_rcbomb_gib_battery" ); //Underpass
+		spawn_item_wrapper( "ammo", "railgun_ammo", (-68,-1103,-10), "t5_veh_rcbomb_gib_battery" ); //Underpass
+		spawn_item_wrapper( "ammo", "railgun_ammo", (-900,830,290), "t5_veh_rcbomb_gib_battery" ); //SEALS factory side
+		spawn_item_wrapper( "ammo", "railgun_ammo", (-990,-843,285), "t5_veh_rcbomb_gib_battery" ); //SDC Stairs
+		spawn_item_wrapper( "ammo", "railgun_ammo", (-90,-568,196), "t5_veh_rcbomb_gib_battery" ); //Heli Pad vents
+		spawn_item_wrapper( "ammo", "railgun_ammo", (756,925,280), "t5_veh_rcbomb_gib_battery" ); //Snipernest Left
+		spawn_item_wrapper( "ammo", "shotgun_ammo", (1180,1094,70), "p_glo_scavenger_pack" ); //Far left mid between boilers?
+		spawn_item_wrapper( "ammo", "shotgun_ammo", (1180,1261,70), "p_glo_scavenger_pack" ); //Far left mid between boilers?
+		spawn_item_wrapper( "ammo", "shotgun_ammo", (139,251,135), "p_glo_scavenger_pack" ); //Shotgun Mid Car
+		spawn_item_wrapper( "ammo", "shotgun_ammo", (-1284,-2243,100), "p_glo_scavenger_pack" ); //Shotgun ammo SDC Spawn
+		spawn_item_wrapper( "ammo", "rocket_ammo", (109,-1000,263), "t6_wpn_projectile_rpg7" ); //RPG ammo Helipad
+		spawn_item_wrapper( "ammo", "rocket_ammo", (109,-940,263), "t6_wpn_projectile_rpg7" ); //RPG ammo Helipad
+		spawn_item_wrapper( "ammo", "rocket_ammo", (-285,130,272), "t6_wpn_projectile_rpg7" ); //RPG ammo Balcony
+		spawn_item_wrapper( "ammo", "rocket_ammo", (-285,250,272), "t6_wpn_projectile_rpg7" ); //RPG ammo Balcony
+		spawn_item_wrapper( "weapon", "rocket_launcher", (670,110,50), "usrpg_mp" ); //SEALS Left Mid
+		spawn_item_wrapper( "weapon", "rocket_launcher", (-285,192,272), "usrpg_mp" ); //Balcony Mid
+		spawn_item_wrapper( "weapon", "shotgun", (1179,1182,75), "ksg_mp" ); //Far SEALS left mid between boilers?
+		spawn_item_wrapper( "weapon", "shotgun", (-1301,-2324,100), "ksg_mp" ); //SDC Spawn
+		spawn_item_wrapper( "weapon", "railgun", (851,3000,373), "ballista_mp" ); //SEALS Spawn
+		spawn_item_wrapper( "weapon", "railgun", (677,925,286), "ballista_mp" ); //Snipernest SEALS Left
+		spawn_item_wrapper( "weapon", "railgun", (-990,-1036,300), "ballista_mp" ); //SDC Stairs
+		spawn_item_wrapper( "weapon", "railgun", (-49,-998,-5), "ballista_mp" ); //Underpass SDC right
 	}
 }
 
-SpawnWeapon(Weapon,WeaponName,Location)
-
+spawn_item_wrapper( item_category, item_type, origin, model  )
 {
-	
-
-    weapon_model = getWeaponModel(Weapon);
-    if(weapon_model=="") weapon_model = Weapon;
-
-    Wep = spawn("script_model",Location);
-    Wep setModel(weapon_model);
-
-	
-	
-
-    for(;;)
-
-    {
-		Wep.angles = (level.angles);
-
-		foreach(player in level.players)
-		{
-			Radius=distance(Location,player.origin);
-
-			if(Radius < 60)
+	switch ( item_category )
+	{
+		case "weapon":
+			spawn_weapon( model, item_type, origin );
+			break;
+		case "ammo":
+			switch ( item_type )
 			{
-				if(level.weapons.available == 1)
-				{
-					Wep Delete();
-					level.weapons.available = 0;
-					player thread pickupAndRespawnWep(Weapon,WeaponName,Location);
-					wait 0.01;
-					return;
-				}
+				case "machinegun_ammo":
+					weapon = "tar21_mp";
+					break;
+				case "rocket_ammo":
+					weapon = "usrpg_mp";
+					break;
+				case "railgun_ammo":
+					weapon = "ballista_mp";
+					break;
+				case "shotgun_ammo":
+					weapon = "ksg_mp";
+					break;
+				default: 
+					break;
 			}
-
-			
-		}
-
-	wait 0.01;
-    }
+			spawn_ammo( model, weapon, origin );
+			break;
+		case "consumable":
+			spawn_consumable( model, item_type, origin );
+			break;
+		default:
+			break;
+	}
 }
 
-SpawnItem(Model,ItemName,Location,Type,ForWhat)
-
+spawn_weapon( model, item_type, origin )
 {
+	weapon_model = getWeaponModel( model );
+    if ( weapon_model == "" )
+	{
+		weapon_model = model;
+	}
+    weapon = spawn( "script_model", origin );
+    weapon setModel( model );
+	weapon.weapon_name = model;
+	weapon thread watch_for_weapon_pickup();
+	weapon thread rotate_angles();
+}
 
-	Item = spawn("script_model",Location);
-    Item setModel(Model);
-	
-	
+spawn_ammo( model, weapon, origin )
+{
+	ammo = spawn( "script_model", origin );
+	ammo setModel( model );
+	ammo.ammo_type = weapon;
+	ammo thread watch_for_ammo_pickup();
+	ammo thread rotate_angles();
+}
 
-    for(;;)
+spawn_consumable( model, item_type, origin )
+{
+	consumable = spawn( "script_model", origin );
+	consumable setModel( model );
+	consumable.item_type = item_type;
+	consumable thread watch_for_consumable_pickup(); 
+	consumable thread rotate_angles();
+}
 
-    {
-		Item.angles = (level.angles);
-
-		foreach(player in level.players)
+watch_for_weapon_pickup()
+{
+	trigger = spawn( "trigger_radius", self.origin, 0, 84, 72 );
+	while ( true )
+	{
+		trigger waittill( "trigger", player );
+		if ( isplayer( player ) )
 		{
-			Radius = distance(Location,player.origin);
-
-			if(Radius < 60)
-			{
-				if(level.items.available == 1 && ForWhat != "healthSmall")
-				{
-					Item Delete();
-					level.items.available = 0;
-					player thread pickupAndRespawnItem(Model,ItemName,Location,Type,ForWhat);
-					wait 0.01;
-					return;
-				}
-				else if(level.items.available == 1 && ForWhat == "healthSmall" && self.health < 100)
-				{
-					Item Delete();
-					level.items.available = 0;
-					player thread pickupAndRespawnItem(Model,ItemName,Location,Type,ForWhat);
-					wait 0.01;
-					return;
-				}
-			}
-
-			
+			player giveWeapon( self.weapon_name );
+			player IPrintLn( "^3" + self.weapon_name + "^7 Acquired" );
+			self hide();
+			wait 5;
+			self show();
 		}
+	}
+}
 
-	wait 0.01;
-    }
+watch_for_ammo_pickup()
+{
+	trigger = spawn( "trigger_radius", self.origin, 0, 84, 72 );
+	while ( true )
+	{
+		trigger waittill( "trigger", player );
+		if ( isplayer( player ) )
+		{
+			player giveMaxAmmo( self.ammo_type );
+			self hide();
+			wait 5;
+			self show();
+		}
+	}
+}
+
+watch_for_consumable_pickup()
+{
+	trigger = spawn( "trigger_radius", self.origin, 0, 84, 72 );
+	while ( true )
+	{
+		trigger waittill( "trigger", player );
+		if ( isplayer( player ) )
+		{
+			self hide();
+			switch ( self.item_type )
+			{
+				case "health_pack":
+					player.health += 25;
+					wait 5;
+					break;
+				case "armor_pack":
+					player.current_armor += 25;
+					wait 10;
+					break;
+				default:
+					logline1 = "Invalid pickup attempt " + self.item_type + " has has not been registered as a valid pickup." + "\n";
+					logprint( logline1 );
+					break;
+			}
+			self show();
+		}
+	}
+}
+
+rotate_angles()
+{
+	while ( true )
+	{
+		self.angles = level.weapon_angles;
+		wait 0.05;
+	}
 }
 
 itemRotation()
 {
-	for(i = 0; i < 16; i++)
+	i = 0;
+	while ( true )
 	{
-		level.angles = (-60, 24 * i ,0);
-
-		if(i == 15)
+		level.weapon_angles = (-60, 24 * i ,0);
+		if ( i == 15 )
 		{
 			i = 0;
 		}
-
-		wait 0.1;
+		i++;
+		wait 0.05;
 	}
-}
-
-pickupAndRespawnWep(Weapon,WeaponName,Location)
-{
-	self giveWeapon(Weapon);
-	self switchToWeapon(Weapon);
-
-	self IPrintLn("^3" + WeaponName + "^7 Acquired");
-
-	level.weapon.available = 1;
-
-	wait 5;
-	self thread SpawnWeapon(Weapon,WeaponName,Location);
-	return;
-}
-
-pickupAndRespawnItem(Model,ItemName,Location,Type,ForWhat)
-{
-	self IPrintLn("^3" + ItemName + "^7 Acquired");
-
-		if(ForWhat == "rl")
-		{
-			self GiveMaxAmmo("usrpg_mp");
-			wait 5;
-			self thread SpawnItem(Model,ItemName,Location,Type,ForWhat);
-			return;
-		}
-
-		else if(ForWhat == "shotgun")
-		{
-			self GiveMaxAmmo("ksg_mp");
-			wait 5;
-			self thread SpawnItem(Model,ItemName,Location,Type,ForWhat);
-			return;
-		}
-
-		else if(ForWhat == "rg")
-		{
-			self GiveMaxAmmo("ballista_mp");
-			wait 5;
-			self thread SpawnItem(Model,ItemName,Location,Type,ForWhat);
-			return;
-		}
-
-		else if(ForWhat == "mg")
-		{
-			self GiveMaxAmmo("tar21_mp");
-			wait 5;
-			self thread SpawnItem(Model,ItemName,Location,Type,ForWhat);
-			return;
-		}
-
-	 	else if(ForWhat == "healthSmall")
-	 	{
-	 		self.health += 25;
-	 		wait 5;
-	 		self thread SpawnItem(Model,ItemName,Location,Type,ForWhat);
-			return;
-		}
-
-		return;
 }
