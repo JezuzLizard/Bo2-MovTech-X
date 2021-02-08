@@ -6,21 +6,21 @@
 
 init()
 {
+	setDvar( "timescale", 1 );
+	level.rocket_jump_damage_reduction = 0.666;
+	level.armor_absorption = 0.666;
 	SetDvar("jump_slowdownEnable", 0);
 	SetDvar("g_speed", 320);
 	SetDvar("friction", 6.0);
 	SetDvar("perk_weapSpreadMultiplier", -100);
-	//SetDvar("perk_healthRegenMultiplier", -100);
-	level.healthRegenDisabled = 1; //denies health regen
 	SetDvar("perk_weapAdsMultiplier", 1000);
-
+	level.onPlayerDamage = ::onplayerdamage();
 	//Map Edits and Weapon and Item Pickups + Respawning
-	self thread maps\mp\_ambientpackage::init();
+	level thread maps\mp\_ambientpackage::init();
 
 	level.clientid = 0;
 	level thread onplayerconnecting();
 	level thread onplayerconnect();
-	level thread destroyhudongameend();
 }
 
 onplayerconnect()
@@ -29,7 +29,11 @@ onplayerconnect()
 	for ( ;; )
 	{
 		level waittill( "connected", player );
+		player.max_armor = 100;
+		player.current_armor = 1000;
 		player thread hudStuff();
+		player thread is_looking_at_ground();
+		player thread onplayerspawned();
 	}
 }
 
@@ -41,7 +45,6 @@ onplayerconnecting()
 		level waittill("connecting", player );
 		player.clientid = level.clientid;	
 		level.clientid++;
-		player thread onplayerspawned();
 	}
 }
 
@@ -50,17 +53,16 @@ onplayerspawned()
 	level endon("game_ended");
     self endon("disconnect");
 
-	isFirstSpawn = true;
 	for(;;)
 	{
 		self waittill("spawned_player");
 		self thread movementTech();
 		self thread loadoutAdjustments();
 		
-		if(isFirstSpawn)
+		if ( !isDefined( isFirstSpawn ) )
 		{
-			initOverFlowFix();
-			isFirstSpawn = false;
+			//initOverFlowFix();
+			isFirstSpawn = true;
 		}
 	}
 }
@@ -80,16 +82,15 @@ movementTech()
 
 	self thread comboJumps();
 
-	for(;;)
+	while ( true )
 	{
-
 		curVel = self GetVelocity();
 		fSpeed = Floor((Sqrt(Pow(curVel[0], 2.0) + Pow(curVel[1], 2.0))));
 
 		angles = self GetAngles();
 
-		xForce = Cos(angles[1]) * (fspeed / 5) + (10 * level.velMult);
-		zForce = Sin(angles[1]) * (fspeed / 5) + (10 * level.velMult);
+		xForce = Cos(angles[1]) * (fspeed / 5) + (10 * self.velMult);
+		zForce = Sin(angles[1]) * (fspeed / 5) + (10 * self.velMult);
 
 
 
@@ -111,8 +112,7 @@ movementTech()
 				Self SetVelocity(self GetVelocity() + (0,0,200));
 			}
 		}
-
-		wait 0.008;
+		wait 0.05;
 	}
 }
 
@@ -122,17 +122,17 @@ comboJumps()
 	self endon( "disconnect" );
     self endon( "death" );
 
-	for(;;)
+	while ( isDefined( self ) )
 	{
 		wait 0.35;
 
 		if(self IsOnGround())
 		{
-			level.velMult = 0;
+			self.velMult = 0;
 		}
 		else
 		{
-			level.velMult += 1;
+			self.velMult += 1;
 		}
 	}
 
@@ -142,13 +142,15 @@ hudStuff() //doesn't work right now?
 {
 	level endon( "game_ended" );
 	self endon( "disconnect" );
-	//globals so we can destroy the hud on game_ended
-	level.velocityText = self createText("default",1.75,"CENTER","BOTTOM",0,-10,1,"UPS: ");
-	level.healthText = self createText("default",1.75,"CENTER","RIGHT",0,-10,1,"Health: ");
-
-	velColor = "^1";
-
-	for(;;)
+	//attached to the player struct so we can destroy the hud on game_ended
+	self.velocity_text = self create_simple_client_hud("default",1.75,"CENTER","BOTTOM",0,-10,1);
+	self.velocity_text.label = &"^2UPS: ";
+	self.health_text = self create_simple_client_hud("default",1.75,"CENTER","RIGHT",0,-10,1);
+	self.health_text.label = &"^1Health: ";
+	self.armor_text = self create_simple_client_hud("default",1.75,"CENTER","RIGHT",0,10,1);
+	self.armor_text.label = &"^4Armor: ";
+	self thread destroy_hud_on_game_end();
+	while ( true )
 	{
 		curTeam = self GetTeam();
 		//curHP = self.health;
@@ -156,27 +158,13 @@ hudStuff() //doesn't work right now?
 		//UPS Hud
 		curVel = self GetVelocity();
 		fSpeed = Floor((Sqrt(Pow(curVel[0], 2.0) + Pow(curVel[1], 2.0))));
+		self.velocity_text setValue( fSpeed );
 
-		if(fSpeed <= 100)
-		{
-			velColor = "^1";
-		}
-		else if(fSpeed > 100 && fSpeed <= 250)
-		{
-			velColor = "^3";
-		}
-		else
-		{
-			velColor = "^2";
-		}
-
-		level.velocityText setSafeText(self, velColor + fSpeed);
-
-		level.healthText setValue( self.health );
+		self.health_text setValue( self.health );
+		self.armor_text setValue( self.current_armor );
 
 
-
-		wait 0.01;
+		wait 0.05;
 		//clearStrings();
 	}
 } 
@@ -196,7 +184,7 @@ loadoutAdjustments()
 	self SwitchToWeapon("tar21_mp");
 
 	self SetPerk("specialty_bulletaccuracy");
-	self SetPerk("specialty_healthregen");
+	//self SetPerk("specialty_healthregen");
 	self SetPerk("specialty_fallheight");
 	self SetPerk("specialty_fastmantle");
 	self SetPerk("specialty_fastladderclimb");
@@ -204,22 +192,139 @@ loadoutAdjustments()
 	self SetPerk("specialty_fastads");
 }
 
-destroyhudongameend()
+destroy_hud_on_game_end()
 {
 	level waittill( "game_ended" );
 	wait 0.5;
-	if ( isDefined( level.velocityText ) )
+	if ( isDefined( self.velocity_text ) )
 	{
-		level.velocityText destroy();
+		self.velocity_text destroy();
 	}
-	if ( isDefined( level.healthText ) )
+	if ( isDefined( self.health_text ) )
 	{
-		level.healthText destroy();
+		self.health_text destroy();
+	}
+	if ( isDefined( self.armor_text ) )
+	{
+		self.armor_text destroy();
 	}
 }
 
-//Overflow Fix - not by me, credits to unknown
+onplayerdamage( einflictor, eattacker, idamage, idflags, smeansofdeath, sweapon, vpoint, vdir, shitloc, psoffsettime ) //checked changed to match cerberus output
+{
+	if ( self.current_armor > 0 )
+	{
+		excess_damage = 0;
+		damage_to_armor = int(idamage * level.armor_absorption);
+		if ( damage_to_armor > self.current_armor )
+		{
+			self.current_armor = 0;
+			excess_damage = int(damage_to_armor);
+			self iprintln(excess_damage);
+		}
+		else 
+		{
+			self.current_armor -= damage_to_armor;
+		}
+		idamage -= damage_to_armor;
+		idamage -= excess_damage;
+		if ( idamage < 0 )
+		{
+			return 0;
+		}
+	}
+	if ( self is_rocket_jumping( smeansofdeath ) )
+	{
+		modified_rocket_jump_damage = int( idamage * level.rocket_jump_damage_reduction );
+		idamage -= modified_rocket_jump_damage;
+		vertical_speed = idamage + 2000;
+		vertical_speed = 2000;
+		self setVelocity( self getVelocity() + ( 0, 0, vertical_speed ) );
+	}
+	self iprintln(idamage);
+	return idamage;
+}
 
+is_rocket_jumping( meansOfDeath )
+{
+	if ( meansOfDeath != "MOD_EXPLOSIVE" )
+	{
+		return;
+	}
+	origin = self.origin + ( 0, 0, -10 );
+	self is_player_looking_at( origin );
+}
+
+is_looking_at_ground()
+{
+	while ( true )
+	{
+		origin = self.origin + ( 0, 0, -10 );
+		self iPrintLn( self is_player_looking_at( origin ) );
+		self iPrintLn( self getVelocity() );
+		self setVelocity( self GetVelocity() + ( 0, 0, 20000000 ) );
+		wait 1;
+	}
+}
+
+is_player_looking_at( origin, dot, do_trace, ignore_ent ) //checked matches cerberus output
+{
+	if ( !isDefined( dot ) )
+	{
+		dot = 0.7;
+	}
+	if ( !isDefined( do_trace ) )
+	{
+		do_trace = 1;
+	}
+	eye = self get_eye();
+	delta_vec = anglesToForward( vectorToAngles( origin - eye ) );
+	view_vec = anglesToForward( self getplayerangles() );
+	new_dot = vectordot( delta_vec, view_vec );
+	if ( new_dot >= dot )
+	{
+		if ( do_trace )
+		{
+			return bullettracepassed( origin, eye, 0, ignore_ent );
+		}
+		else
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+get_eye() //checked matches cerberus output
+{
+	if ( isplayer( self ) )
+	{
+		linked_ent = self getlinkedent();
+		if ( isDefined( linked_ent ) && getDvarInt( "cg_cameraUseTagCamera" ) > 0 )
+		{
+			camera = linked_ent gettagorigin( "tag_camera" );
+			if ( isDefined( camera ) )
+			{
+				return camera;
+			}
+		}
+	}
+	pos = self geteye();
+	return pos;
+}
+
+create_simple_client_hud( font, fontscale, align, relative, x, y, sort )
+{
+	text_elem = self createfontstring( font, fontscale );
+	text_elem setPoint( align, relative, x, y );
+	text_elem.sort = sort;
+	text_elem.hideWhenInMenu = true;
+	return text_elem;
+}
+
+
+//Overflow Fix - not by me, credits to unknown
+/*
 createText(font, fontscale, align, relative, x, y, sort, text)
 {
 	textElem = CreateFontString( font, fontscale );
@@ -229,7 +334,7 @@ createText(font, fontscale, align, relative, x, y, sort, text)
 
 	textElem.type = "text";
 	addTextTableEntry(textElem, getStringId(text));
-	textElem setSafeText(self, text);
+	//textElem setSafeText(self, text);
 
 	return textElem;
 }
@@ -410,3 +515,4 @@ clear(player)
 
 	self destroy();
 }
+*/
